@@ -1,2 +1,2 @@
 # ThereIsASky
-Ultimate Latent model for the sky
+Believe it or not, there is one sky for all of us.
