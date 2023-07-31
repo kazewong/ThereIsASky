@@ -1,30 +1,24 @@
 import torchvision
-from PIL import Image
-from io import BytesIO
-from zipfile import ZipFile
 from torch.utils.data import Dataset
-from threading import Lock
+import h5py
 
 class GalaxyZooImageDataset(Dataset):
 
     def __init__(self,
                 path: str,
-                transform= torchvision.transforms.ToTensor()):
-        self.zip_file = ZipFile(path, 'r')
+                transform= None):
+        self.data = h5py.File(path, 'r')['images']
         self.transform = transform
-        name_list = self.zip_file.namelist()
-        self.name_list = list(filter(lambda x: name_list[2] not in x, name_list))[1:]
-        self.lock = Lock()
 
     def __len__(self):
-        return len(self.name_list)
+        return len(self.data)
 
     def __getitem__(self, idx):
-        with self.lock:
-            img = Image.open(BytesIO(self.zip_file.read(self.name_list[idx])))
-            if self.transform:
-                img = self.transform(img)
-            return img
+        sample = self.data[idx]
+        if self.transform:
+            sample = self.transform(sample)
+        return sample
 
     def get_shape(self):
-        return self[0].shape
+        return self.data.shape[1:]
+

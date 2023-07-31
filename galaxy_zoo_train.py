@@ -167,11 +167,10 @@ class GalaxyZooTrainer:
     ) -> tuple[ScordBasedSDE, PyTree, Array | float]:
         self.train_loader.sampler.set_epoch(epoch)
         train_loss = 0
-        for batch in tqdm(trainloader):
+        for batch in trainloader:
             key, subkey = jax.random.split(key)
             local_batch = jnp.array(batch)
             global_shape = (jax.process_count() * local_batch.shape[0], ) + self.data_shape
-            print(local_batch.shape, global_shape)
 
             arrays = jax.device_put(jnp.split(local_batch, len(self.global_mesh.local_devices), axis = 0), self.global_mesh.local_devices)
             global_batch = jax.make_array_from_single_device_arrays(global_shape, self.sharding, arrays)
@@ -188,7 +187,7 @@ class GalaxyZooTrainer:
     ):
         test_loss = 0
         self.test_loader.sampler.set_epoch(epoch)
-        for batch in tqdm(testloader):
+        for batch in testloader:
             key, subkey = jax.random.split(key)
             local_batch = jnp.array(batch)
             global_shape = (jax.process_count() * local_batch.shape[0], ) + self.data_shape
