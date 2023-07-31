@@ -16,6 +16,7 @@ from kazeML.jax.diffusion.sde import VESDE
 from kazeML.jax.diffusion.sde_score import ScordBasedSDE, GaussianFourierFeatures, LangevinCorrector
 from data.loader.galaxy_zoo import GalaxyZooImageDataset
 from tqdm import tqdm
+import numpy as np
 
 class SDEDiffusionParser(Tap):
     # Metadata about the experiment
@@ -46,8 +47,6 @@ if args.distributed == True:
     print(jax.process_count())
 
 n_processes = jax.process_count()
-if jax.process_index() == 0:
-    Task.init(project_name=args.project_name, task_name=args.experiment_name)
 
 class GalaxyZooTrainer:
 
@@ -55,6 +54,8 @@ class GalaxyZooTrainer:
                 config: argparse.Namespace, logging: bool = False):
         self.config = config
         self.logging = logging
+        if logging and (jax.process_index() == 0):
+            Task.init(project_name=args.project_name, task_name=args.experiment_name)
 
         devices = np.array(jax.devices())
         self.global_mesh = jax.sharding.Mesh(devices, ('b'))
@@ -176,7 +177,7 @@ class GalaxyZooTrainer:
             global_batch = jax.make_array_from_single_device_arrays(global_shape, self.sharding, arrays)
             model, opt_state, loss_values = self.train_step(model, opt_state, global_batch, subkey, self.optimizer.update)
             if log_loss: train_loss += jnp.sum(process_allgather(loss_values))
-        train_loss = train_loss/ jax.process_count()
+        train_loss = train_loss/ jax.process_count() / len(trainloader) /np.sum(self.data_shape)
         return model, opt_state, train_loss
 
     def test_epoch(self,
@@ -195,13 +196,13 @@ class GalaxyZooTrainer:
             arrays = jax.device_put(jnp.split(local_batch, len(self.global_mesh.local_devices), axis = 0), self.global_mesh.local_devices)
             global_batch = jax.make_array_from_single_device_arrays(global_shape, self.sharding, arrays)
             test_loss += jnp.sum(process_allgather(self.test_step(model, global_batch, subkey)))
-        test_loss_values = test_loss/ jax.process_count()
+        test_loss_values = test_loss/ jax.process_count() / len(testloader) /np.sum(self.data_shape)
         return test_loss_values
 
-if jax.process_index() == 0:
-    trainer = GalaxyZooTrainer(args, logging=True)
-    trainer.train()
-else:
-    trainer = GalaxyZooTrainer(args, logging=False)
-    trainer.train()
+# if jax.process_index() == 0:
+#     trainer = GalaxyZooTrainer(args, logging=True)
+#     trainer.train()
+# else:
+#     trainer = GalaxyZooTrainer(args, logging=False)
+#     trainer.train()
 

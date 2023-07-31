@@ -6,7 +6,7 @@ class GalaxyZooImageDataset(Dataset):
 
     def __init__(self,
                 path: str,
-                transform= None):
+                transform= lambda x: (x/255)*2 - 1):
         self.data = h5py.File(path, 'r')['images']
         self.transform = transform
 
