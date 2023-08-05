@@ -42,4 +42,4 @@ data = np.concatenate(data, axis=0).transpose(0,3,1,2)
 
 output_path = '/mnt/home/wwong/ceph/Dataset/ThereIsASky/galaxyzoo/images_gz2.hdf5'
 with h5py.File(output_path, 'w') as f:
-    f.create_dataset("images", data=data)
+    f.create_dataset("data", data=data)
