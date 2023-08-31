@@ -14,12 +14,12 @@ ngroups = params['NGROUPS']   #used to remove stars without valid parameter entr
 ksel = np.where((ngroups != 0))[0]
 print(len(mastarall[2].data[ksel]))   #how many spectra are selected
 
-length = spectra['WAVE'][0]
-flux = spectra['FLUX']
+length = spectra['WAVE'][0].astype(np.float32)
+flux = spectra['FLUX'][:,None].astype(np.float32)[ksel]
 
 labels = {'teff': teff[ksel], 'logg': logg[ksel], 'feh': feh[ksel]}
 
-with h5py.File(f'{top_dir}mastar.hdf5', 'w') as f:
+with h5py.File(f'{top_dir}MaStar_spec_label.hdf5', 'w') as f:
     f.create_dataset('data', data=flux)
     group = f.create_group('labels')
     for key, value in labels.items():
