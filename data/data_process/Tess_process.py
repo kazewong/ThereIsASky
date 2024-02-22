@@ -5,10 +5,15 @@ import h5py
 from multiprocessing import Pool
 
 
-dir = '/mnt/ceph/users/neisner/latte/output_LATTE/data/s0006/'
 output_name = '/mnt/home/wwong/ceph/Dataset/ThereIsASky/tess/sector_length_234.h5'
+n_core = 24
 
-file_list = os.listdir(dir)
+file_list = []
+data_dir = '/mnt/ceph/users/neisner/latte/output_LATTE/data/s0006/'
+# for i in range(50,61):
+#     temp_dir = data_dir + f'{i}/'
+file_list = os.listdir(data_dir)
+file_list = list(map(lambda x: data_dir + x, file_list))
 
 segment_length = 234 # 15678 /234 = 67 segments, 67 is a prime number
 
@@ -59,7 +64,7 @@ def process_file(file_path):
     label = np.empty((0, 3))
     data = np.empty((4, 0, segment_length))
     try:
-        example = make_training_example(dir+file_path)
+        example = make_training_example(file_path)
         metadata = np.repeat(np.array([example['ticid'], example['sector']])[None], example['time'].shape[0], axis=0)
         label = np.repeat(np.array([example['tessmag'], example['teff'], example['srad']])[None], example['time'].shape[0], axis=0)
         data = np.array([example['time'], example['flux'], example['bkg'], example['sap_flux']])
@@ -68,29 +73,26 @@ def process_file(file_path):
 
     return metadata, label, data
 
-file_list[0] = file_list[0]+'aklsfj'
-
 def multiprocess_data(file_list):
-    with Pool(24) as p:
+    with Pool(n_core) as p:
         metadata, label, data = zip(*p.map(process_file, file_list))
         p.close()
     return metadata, label, data
 
 metadata, label, data = multiprocess_data(file_list)
 
-
 metadata = np.concatenate(metadata,axis=0)
 label = np.concatenate(label,axis=0).astype(np.float32)
 data = np.concatenate(data,axis=1)
 with h5py.File(output_name, 'w') as f:
     meta_data_group = f.create_group('metadata')
-    meta_data_group.create_dataset('ticid', data=metadata[0])
-    meta_data_group.create_dataset('sector', data=metadata[1])
+    meta_data_group.create_dataset('ticid', data=metadata[:,0])
+    meta_data_group.create_dataset('sector', data=metadata[:,1])
 
     label_group = f.create_group('label')
-    label_group.create_dataset('tessmag', data=label[0])
-    label_group.create_dataset('teff', data=label[1])
-    label_group.create_dataset('srad', data=label[2])
+    label_group.create_dataset('tessmag', data=label[:,0])
+    label_group.create_dataset('teff', data=label[:,1])
+    label_group.create_dataset('srad', data=label[:,2])
 
     data_group = f.create_group('data')
     data_group.create_dataset('time', data=data[0])

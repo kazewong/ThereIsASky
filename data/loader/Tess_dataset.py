@@ -1,4 +1,4 @@
-from torch.utils.data import Dataset
+from kazeML.jax.diffusion.diffusion_dataset import DiffusionDataset
 import h5py
 
 class TessData(Dataset):

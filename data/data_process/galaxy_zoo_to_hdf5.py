@@ -3,7 +3,6 @@ from PIL import Image
 from io import BytesIO
 from zipfile import ZipFile
 import numpy as np
-from threading import Lock
 from multiprocessing import Pool
 
 # As much as I want to use the zip directly, it seems using multiple processes and nodes are unstable.
